@@ -1,0 +1,62 @@
+set number
+set guioptions-=m
+syntax on
+colorscheme wildcharm
+set expandtab " タブ入力を複数の空白入力に置き換える
+set tabstop=4 " 画面上でタブ文字が占める幅
+set softtabstop=4 " 連続した空白に対してタブキーやバックスペースキーでカーソルが動く幅
+set autoindent " 改行時に前の行のインデントを継続する
+set smartindent " 改行時に前の行の構文をチェックし次の行のインデントを増減する
+set shiftwidth=4 " smartindentで増減する幅
+" 挿入モードでバックスペースで削除できるようにする
+set backspace=indent,eol,start
+set incsearch " インクリメンタルサーチ. １文字入力毎に検索を行う
+set ignorecase " 検索パターンに大文字小文字を区別しない
+set smartcase " 検索パターンに大文字を含んでいたら大文字小文字を区別する
+set hlsearch " 検索結果をハイライト
+" 検索結果がファイル末尾まで進んだら、ファイルっ先頭から再び検索
+set wrapscan
+" バックアップファイルを作成しない
+set nobackup
+set noswapfile
+" カーソルを行末の一時文超えるようにせてい
+set virtualedit=onemore
+" ビープ音を消す
+set belloff=all
+" マッチ件数を表示
+set shortmess-=S
+" クリップモードとヤンク
+set clipboard+=unnamedplus,unnamed
+" フォントとサイズ
+set guifont=Consolas:h16
+set wildmenu " コマンドモードの補完
+set history=5000 " 保存するコマンド履歴の数
+set relativenumber
+" リスト文字の表示設定
+" set listchars=tab:>-,space:·
+" リスト表示を有効にする
+" set list
+
+if &compatible
+    set nocompatible
+endif
+set runtimepath+=~/.vim/dein.vim
+
+call dein#begin(expand('~/.vim/dein'))
+call dein#add('tomasr/molokai')
+call dein#add('Shougo/unite.vim')
+call dein#add('preservim/nerdtree')
+call dein#add('junegunn/fzf', {'build': './install --all'})
+call dein#add('junegunn/fzf.vim')
+call dein#add('tpope/vim-fugitive')
+call dein#end()
+
+if dein#check_install()
+    call dein#install()
+endif
+
+colorscheme molokai
+set t_Co=256
+" Vimを起動したときに自動的にNERDTreeを開くようにする
+autocmd VimEnter * NERDTree
+nnoremap <C-t> :NERDTreeToggle<CR>
