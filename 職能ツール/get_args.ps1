@@ -48,6 +48,13 @@ foreach ($File in $ExcelFiles) {
 
     # 指定セルの値取得
     $CellValue = $Sheet.Cells.Item($CellRow, $CellColumn).Text
+
+    # 空データ判定
+    if ([string]::IsNullOrWhiteSpace($CellValue)) {
+        $CellValue = "空データです"
+    }
+
+    # ログに出力
     $LogContent += "$File ($SheetName [$CellRow,$CellColumn]) = $CellValue"
 
     # 閉じる
