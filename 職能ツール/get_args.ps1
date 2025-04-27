@@ -39,9 +39,7 @@ $Excel = New-Object -ComObject Excel.Application
 $Excel.Visible = $false
 $Excel.DisplayAlerts = $false
 
-$LogContent = @("Excelファイルの指定セルの内容:")
-
-# ファイル処理
+$LogContent = @()
 foreach ($File in $ExcelFiles) {
     $Workbook = $Excel.Workbooks.Open($File)
     $Sheet = $Workbook.Sheets.Item($SheetName)
@@ -49,24 +47,25 @@ foreach ($File in $ExcelFiles) {
     # 指定セルの値取得
     $CellValue = $Sheet.Cells.Item($CellRow, $CellColumn).Text
 
-    # 空データ判定
+    # ファイル名を記録
+    $LogContent += "ファイル名：$File"
+
+    # 空白セル判定
     if ([string]::IsNullOrWhiteSpace($CellValue)) {
-        $CellValue = "空データです"
+        $LogContent += "空白のセル：[$CellRow,$CellColumn]"
+    } else {
+        $LogContent += "取得した値：$CellValue"
     }
 
-    # ログに出力
-    $LogContent += "$File ($SheetName [$CellRow,$CellColumn]) = $CellValue"
+    # 空行を追加してファイルごとの情報を分かりやすくする
+    $LogContent += ""
 
     # 閉じる
     $Workbook.Close($false)
 }
 
-# Excelプロセスを終了
-$Excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel)
-
 # ログファイルに出力
 $LogContent | Set-Content $LogFile -Encoding UTF8
 
-Write-Host "Excelデータを '$LogFile' に出力しました。"
+Write-Host "フォーマットに従い '$LogFile' に出力しました。"
 
