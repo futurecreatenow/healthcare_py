@@ -23,8 +23,7 @@ foreach ($line in Get-Content $ConfigFile -Encoding UTF8) {
 
 # 設定値の取得
 $SheetName = $ConfigData["SheetName"]
-$CellRow = [int]$ConfigData["CellRow"]
-$CellColumn = [int]$ConfigData["CellColumn"]
+$CellAddress = $ConfigData["CellAddress"]  # 例: "A5"
 
 # Excel COMオブジェクトの作成
 $Excel = New-Object -ComObject Excel.Application
@@ -46,8 +45,8 @@ foreach ($Folder in $Folders) {
         $Workbook = $Excel.Workbooks.Open($File)
         $Sheet = $Workbook.Sheets.Item($SheetName)
 
-        # 指定セルの値取得
-        $CellValue = $Sheet.Cells.Item($CellRow, $CellColumn).Text
+        # 指定セルの値取得（セル座標を分解せずそのまま利用）
+        $CellValue = $Sheet.Range($CellAddress).Text
 
         # ファイル名を記録
         $LogContent += "フォルダ: $Folder"
@@ -55,7 +54,7 @@ foreach ($Folder in $Folders) {
 
         # 空白セル判定
         if ([string]::IsNullOrWhiteSpace($CellValue)) {
-            $LogContent += "空白のセル：[$CellRow,$CellColumn]"
+            $LogContent += "空白のセル：[$CellAddress]"
         } else {
             $LogContent += "取得した値：$CellValue"
         }
@@ -75,4 +74,4 @@ $LogContent | Set-Content $LogFile -Encoding UTF8
 $Excel.Quit()
 [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel)
 
-Write-Host "フォーマットに従い '$LogFile' に出力しました。"
+Write-Host "'$LogFile' に出力しました。"
