@@ -2,11 +2,9 @@
 ファイル名：C:\Users\teradatakayuki\Desktop\job\Powershell_tool\files\サンプル.xlsx
 取得した値：4
 
-フォルダ: ..\files
 ファイル名：C:\Users\teradatakayuki\Desktop\job\Powershell_tool\files\テスト - コピー.xlsx
 空白のセル：[B3]
 
-フォルダ: ..\files
 ファイル名：C:\Users\teradatakayuki\Desktop\job\Powershell_tool\files\テスト.xlsx
 取得した値：ああ
 
@@ -14,11 +12,9 @@
 ファイル名：C:\Users\teradatakayuki\Desktop\job\Powershell_tool\test\sample.xlsx
 取得した値：4
 
-フォルダ: ..\test
 ファイル名：C:\Users\teradatakayuki\Desktop\job\Powershell_tool\test\test.xlsx
 取得した値：ああ
 
-フォルダ: ..\test
 ファイル名：C:\Users\teradatakayuki\Desktop\job\Powershell_tool\test\test2.xlsx
 空白のセル：[B3]
 

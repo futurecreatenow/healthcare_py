@@ -1,69 +1,148 @@
 ﻿# Excel COMオブジェクトを使用
 param (
-    [string]$ConfigFile = "config.ini",
-    [string]$TargetFolder = "..\files",
-    [string]$TestFolder = "..\test",
-    [string]$LogFile = "result.txt"
+    [string]$ConfigFile,
+    [string]$TargetFolder,
+    [string]$TestFolder,
+    [string]$LogFile
 )
 
-# config.ini の読み込み
-if (-Not (Test-Path $ConfigFile)) {
-    Write-Host "エラー: ファイル '$ConfigFile' が見つかりません。"
-    exit 1
+# デフォルト値をハッシュテーブルで管理
+$DefaultConfig = @{
+    ConfigFile   = "config.ini"
+    TargetFolder = "..\files"
+    TestFolder   = "..\test"
+    LogFile      = "result.txt"
 }
 
-$ConfigData = @{}
-foreach ($line in Get-Content $ConfigFile -Encoding UTF8) {
-    if ($line -match '^(.*?)=(.*?)$') {
-        $key = $matches[1].Trim()
-        $value = $matches[2].Trim()
-        $ConfigData[$key] = $value
+# デフォルト値を適用
+foreach ($key in $DefaultConfig.Keys) {
+    if (-Not (Get-Variable -Name $key -ErrorAction SilentlyContinue).Value) {
+        Set-Variable -Name $key -Value $DefaultConfig[$key]
     }
 }
 
-# 設定値の取得
-$SheetName = $ConfigData["SheetName"]
-$CellAddress = $ConfigData["CellAddress"]  # 例: "A5"
+################################################################
+### 関数定義
+################################################################
 
-# Excel COMオブジェクトの作成
-$Excel = New-Object -ComObject Excel.Application
-$Excel.Visible = $false
-$Excel.DisplayAlerts = $false
+# 第一引数のチェックを行う関数 config.iniの読み込み確認
+function Check-FirstArgument {
+    param ([string]$ConfigFile)
+    if (-Not $ConfigFile) {
+        Write-Host "エラー: 第一引数に 'config.ini' を指定してください。"
+        exit 1
+    }
+}
 
-$LogContent = @()
-$Folders = @($TargetFolder, $TestFolder)
+# config.ini の読み込みを行う関数
+function Load-Config {
+    param ([string]$ConfigFile)
+    if (-Not (Test-Path $ConfigFile)) {
+        Write-Host "エラー: ファイル '$ConfigFile' が見つかりません。"
+        exit 1
+    }
 
-foreach ($Folder in $Folders) {
+    $ConfigData = @{}
+    foreach ($line in Get-Content $ConfigFile -Encoding UTF8) {
+        if ($line -match '^(.*?)=(.*?)$') {
+            $ConfigData[$matches[1].Trim()] = $matches[2].Trim()
+        }
+    }
+    return $ConfigData
+}
+
+# フォルダの存在確認を行う関数
+function Check-Folder {
+    param ([string]$Folder)
     if (-Not (Test-Path $Folder)) {
         Write-Host "エラー: フォルダ '$Folder' が見つかりません。"
-        continue
+        return $false
     }
+    return $true
+}
 
+# Excel COMオブジェクトを初期化する関数
+function Initialize-Excel {
+    $Excel = New-Object -ComObject Excel.Application
+    $Excel.Visible = $false
+    $Excel.DisplayAlerts = $false
+    return $Excel
+}
+
+# Excel COMオブジェクトをクリーンアップする関数
+function Cleanup-Excel {
+    param ([object]$Excel)
+    $Excel.Quit()
+    [System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel)
+}
+
+# 指定セルの値を取得する関数
+function Get-CellValue {
+    param ([object]$Sheet, [string]$CellAddress)
+    return $Sheet.Range($CellAddress).Text
+}
+
+# 空白セル判定を行う関数
+function Is-EmptyCell {
+    param ([string]$CellValue)
+    return [string]::IsNullOrWhiteSpace($CellValue)
+}
+
+# Excelファイルを処理する関数
+function Process-ExcelFile {
+    param ([string]$Folder, [object]$Excel, [string]$SheetName, [string]$CellAddress)
+
+    $LogContent = @("フォルダ: $Folder")
     $ExcelFiles = Get-ChildItem -Path $Folder -Filter "*.xlsx" | Select-Object -ExpandProperty FullName
 
     foreach ($File in $ExcelFiles) {
         $Workbook = $Excel.Workbooks.Open($File)
         $Sheet = $Workbook.Sheets.Item($SheetName)
 
-        # 指定セルの値取得（セル座標を分解せずそのまま利用）
-        $CellValue = $Sheet.Range($CellAddress).Text
-
         # ファイル名を記録
-        $LogContent += "フォルダ: $Folder"
         $LogContent += "ファイル名：$File"
+        
+        # 指定セルの値を取得
+        $CellValue = Get-CellValue -Sheet $Sheet -CellAddress $CellAddress
 
         # 空白セル判定
-        if ([string]::IsNullOrWhiteSpace($CellValue)) {
+        if (Is-EmptyCell -CellValue $CellValue) {
             $LogContent += "空白のセル：[$CellAddress]"
         } else {
             $LogContent += "取得した値：$CellValue"
         }
 
-        # 空行を追加してファイルごとの情報を分かりやすくする
+        # 空行を追加して見やすくする
         $LogContent += ""
 
-        # 閉じる
+        # ワークブックを閉じる
         $Workbook.Close($false)
+    }
+    return $LogContent
+}
+
+################################################################
+### 実処理
+################################################################
+
+# 第一引数のチェック
+Check-FirstArgument -ConfigFile $ConfigFile
+
+# 設定値の取得
+$ConfigData = Load-Config -ConfigFile $ConfigFile
+$SheetName = $ConfigData["SheetName"]
+$CellAddress = $ConfigData["CellAddress"]
+
+# Excel COMオブジェクトの作成
+$Excel = Initialize-Excel
+
+# フォルダの処理
+$Folders = @($TargetFolder, $TestFolder)
+$LogContent = @()
+
+foreach ($Folder in $Folders) {
+    if (Check-Folder -Folder $Folder) {
+        $LogContent += Process-ExcelFile -Folder $Folder -Excel $Excel -SheetName $SheetName -CellAddress $CellAddress
     }
 }
 
@@ -71,7 +150,6 @@ foreach ($Folder in $Folders) {
 $LogContent | Set-Content $LogFile -Encoding UTF8
 
 # Excelプロセス終了
-$Excel.Quit()
-[System.Runtime.Interopservices.Marshal]::ReleaseComObject($Excel)
+Cleanup-Excel -Excel $Excel
 
 Write-Host "'$LogFile' に出力しました。"
