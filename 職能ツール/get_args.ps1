@@ -20,6 +20,11 @@ foreach ($key in $DefaultConfig.Keys) {
 ################################################################
 ### 関数定義
 ################################################################
+# LogFileに追記する関数
+function Add-Log {
+    param ([string]$LogFile, [string]$Message)
+    $Message | Add-Content -Path $LogFile -Encoding UTF8
+}
 
 # 第一引数のチェックを行う関数 config.iniの読み込み確認
 function Check-FirstArgument {
@@ -56,9 +61,9 @@ function Load-Config {
 
 # フォルダの存在確認を行う関数
 function Check-Folder {
-    param ([string]$Folder)
+    param ([string]$Folder, [string]$LogFile)
     if (-Not (Test-Path $Folder)) {
-        Write-Host "エラー: フォルダ '$Folder' が見つかりません。"
+        Add-Log -LogFile $LogFile -Message "エラー: フォルダ '$Folder' が見つかりません。"
         return $false
     }
     return $true
@@ -106,43 +111,33 @@ function Is-EmptyCell {
     return [string]::IsNullOrWhiteSpace($CellValue)
 }
 
-# 多次元配列を用いてExcelファイルを処理する関数
+# Excelファイルを処理する関数
 function Process-ExcelFile-Test {
-    param ([string]$Folder, [object]$Excel, [string]$SheetName, [Array]$CellArr)
+    param ([string]$Folder, [object]$Excel, [string]$SheetName, [Array]$CellArr, [string]$LogFile)
 
-    $LogContent = @("フォルダ: $Folder")
+    Add-Log -LogFile $LogFile -Message "フォルダ: $Folder"
     $ExcelFiles = Get-ChildItem -Path $Folder -Filter "*.xlsx" | Select-Object -ExpandProperty FullName
 
     foreach ($File in $ExcelFiles) {
+        Add-Log -LogFile $LogFile -Message "ファイル名：$File"
         $Workbook = $Excel.Workbooks.Open($File)
         $Sheet = $Workbook.Sheets.Item($SheetName)
 
-        # ファイル名を記録
-        $LogContent += "ファイル名：$File"
-        foreach($Celldata in $CellArr){
-            $Cell=$Celldata[0]
-            $LogContent += "セル座標：$Cell"
-            # 指定セルの値を取得
+        foreach ($Celldata in $CellArr) {
+            $Cell = $Celldata[0]
+            Add-Log -LogFile $LogFile -Message "セル座標：$Cell"
             $CellValue = Get-CellValue -Sheet $Sheet -CellAddress $Celldata[0]
 
-            # 空白セル判定
             if (Is-EmptyCell -CellValue $CellValue) {
-                $LogContent += "空白"
-            } else {
-                continue
+                Add-Log -LogFile $LogFile -Message "空白"
             }
-
         }
 
-
-        # 空行を追加して見やすくする
-        $LogContent += ""
-
-        # ワークブックを閉じる
+        Add-Log -LogFile $LogFile -Message ""
         $Workbook.Close($false)
     }
-    return $LogContent
 }
+
 ################################################################
 ### 実処理
 ################################################################
@@ -181,16 +176,14 @@ $Excel = Initialize-Excel
 
 # フォルダの処理
 $Folders = @($TargetFolder, $TestFolder)
-$LogContent = @()
+
+
 
 foreach ($Folder in $Folders) {
-    if (Check-Folder -Folder $Folder) {
-        $LogContent += Process-ExcelFile-Test -Folder $Folder -Excel $Excel -SheetName $SheetName -CellArr $AddressMulArr
+    if (Check-Folder -Folder $Folder -LogFile $LogFile) {
+        Process-ExcelFile-Test -Folder $Folder -Excel $Excel -SheetName $SheetName -CellArr $AddressMulArr -LogFile $LogFile
     }
 }
-
-# ログファイルに出力
-$LogContent | Set-Content $LogFile -Encoding UTF8
 
 # Excelプロセス終了
 Cleanup-Excel -Excel $Excel
