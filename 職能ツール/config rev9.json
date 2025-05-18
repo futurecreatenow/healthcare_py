@@ -1,0 +1,31 @@
+{
+  "main": {
+    "SheetName": "データシート"
+  },
+  "section1": {
+    "CellA1":{
+      "CellA1Address": "A1",
+      "CellA1AddressName": "A1の値"
+    },
+    "CellA2":{
+      "CellA2Address": "A2",
+      "CellA2AddressName": "A2の値"
+    },
+    "CellA3":{
+      "CellA3Address": "A3",
+      "CellA3AddressName": "A3の値"
+    },
+    "CellB1":{
+      "CellB1Address": "B1",
+      "CellB1AddressName": "B1の値"
+    },
+    "CellB2":{
+      "CellB2Address": "B2",
+      "CellB2AddressName": "B2の値"
+    },
+    "CellB3":{
+      "CellB3Address": "B3",
+      "CellB3AddressName": "B3の値"
+    }
+  }
+}
